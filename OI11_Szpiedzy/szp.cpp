@@ -2,29 +2,34 @@
 #include <cstdlib>
 #include <stack>
 
-const int MAXN = 1000001;
-
 int main()
 {
     int n, score = 0;
-    int *beingSpied = (int*)malloc(sizeof(int) * MAXN);
-    int *spyingWho = (int*)malloc(sizeof(int) * MAXN);
-    bool *usedSpy = (bool*)malloc(sizeof(bool) * MAXN);
-    for (int i = 0; i < MAXN; i++)
-        usedSpy[i] = false;
-    scanf("%d", &n);
     std::stack<int> notBeingFollowed;
+    scanf("%d", &n);
+    int *beingSpied = (int*)malloc(sizeof(int) * n);
+    int *spyingWho = (int*)malloc(sizeof(int) * n);
+    bool *usedSpy = (bool*)malloc(sizeof(bool) * n);
+
+    for (int i = 0; i < n; i++)
+    {
+        usedSpy[i] = false;
+        beingSpied[i] = 0;
+    }
+
     for (int i = 0; i < n; i++)
     {
         int spying;
         scanf("%d", &spying);
         spying--;
-        beingSpied[spying]++;
         spyingWho[i] = spying;
+        beingSpied[spying]++;
     }
+
     for (int i = 0; i < n; i++)
         if (beingSpied[i] == 0)
             notBeingFollowed.push(i);
+
     while (!notBeingFollowed.empty())
     {
         int spy = notBeingFollowed.top();
@@ -41,6 +46,7 @@ int main()
         }
         usedSpy[spy] = true;
     }
+
     for (int i = 0; i < n; i++)
     {
         if (!usedSpy[i])
@@ -56,6 +62,7 @@ int main()
             score += len / 2;
         }
     }
+
     printf("%d\n", score);
     return 0;
 }
