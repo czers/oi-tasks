@@ -7,11 +7,13 @@ const int kMaximumShopsNumber = 100000;
 
 class Shop {
   public:
-    struct XComparer {
-        bool operator()(const Shop &x, const Shop &y);
-    };
-    struct YComparer {
-        bool operator()(const Shop &x, const Shop &y);
+    class Comparer {
+      public:
+        Comparer(int (*coord_accessor)(const Shop&))
+                : coord_accessor_(coord_accessor) {}
+        bool operator()(const Shop &a, const Shop &b);
+      private:
+        int (*coord_accessor_)(const Shop&);
     };
 
     static const int kInitX = 0;
@@ -23,6 +25,8 @@ class Shop {
     int x() const { return x_; }
     int y() const { return y_; }
     int visit_count() const { return visit_count_; }
+    static int GetX(const Shop &s) { return s.x_; }
+    static int GetY(const Shop &s) { return s.y_; }
     void Init(int x, int y, int visit_count);
     void Rotate();
 
@@ -32,12 +36,8 @@ class Shop {
     int visit_count_;
 };
 
-bool Shop::XComparer::operator()(const Shop &a, const Shop &b) {
-    return a.x_ < b.x_;
-}
-
-bool Shop::YComparer::operator()(const Shop &a, const Shop &b) {
-    return a.y_ < b.y_;
+bool Shop::Comparer::operator()(const Shop &a, const Shop &b) {
+    return (*coord_accessor_)(a) < (*coord_accessor_)(b);
 }
 
 void Shop::Init(int x, int y, int visit_count) {
@@ -52,28 +52,36 @@ void Shop::Rotate() {
     y_ = x + y_;
 }
 
-int GetNthX(const Shop shops[], int nth) {
+int GetNthCoord(const Shop sorted_shops[], int nth,
+        int (*coord_accessor)(const Shop&)) {
     int i = 0;
     int retval = 0;
     int shops_passed = 0;
     while (shops_passed < nth) {
-        retval = shops[i].x();
-        shops_passed += shops[i].visit_count();
+        retval = (*coord_accessor)(sorted_shops[i]);
+        shops_passed += sorted_shops[i].visit_count();
         ++i;
     }
     return retval;
 }
 
-int GetNthY(const Shop shops[], int nth) {
-    int i = 0;
-    int retval = 0;
-    int shops_passed = 0;
-    while (shops_passed < nth) {
-        retval = shops[i].y();
-        shops_passed += shops[i].visit_count();
-        ++i;
-    }
-    return retval;
+int GetMedianCoord(Shop shops[], int n, int median_visit,
+        int (*coord_accessor)(const Shop&)) {
+    Shop::Comparer shop_comparer = Shop::Comparer(coord_accessor);
+    sort(shops, shops + n, shop_comparer);
+    return GetNthCoord(shops, median_visit, coord_accessor);
+}
+
+int RoundUnrotatedCoord(float unrotated, int median) {
+    return (unrotated < static_cast<float>(median))
+        ? median
+        : median + 1;
+}
+
+void DebugShops(int n, const Shop shops[]) {
+    printf("shops:%d\n", n);
+    for (int i = 0; i < n; ++i)
+        printf(" x:%d y:%d\n", shops[i].x(), shops[i].y());
 }
 
 int main() {
@@ -94,39 +102,30 @@ int main() {
 
     const int median_visit = (total_visit_count + 1) / 2;
 
-    Shop::XComparer shop_x_comparer;
-    sort(rotated_shops, rotated_shops + n, shop_x_comparer);
-    const int best_x_rotated = GetNthX(rotated_shops, median_visit);
-    sort(shops, shops + n, shop_x_comparer);
-    const int median_x = GetNthX(shops, median_visit);
-
-    Shop::YComparer shop_y_comparer;
-    sort(rotated_shops, rotated_shops + n, shop_y_comparer);
-    const int best_y_rotated = GetNthY(rotated_shops, median_visit);
-    sort(shops, shops + n, shop_y_comparer);
-    const int median_y = GetNthY(shops, median_visit);
+    const int best_x_rotated = GetMedianCoord(rotated_shops, n,
+                                              median_visit,
+                                              &Shop::GetX);
+    const int best_y_rotated = GetMedianCoord(rotated_shops, n,
+                                              median_visit,
+                                              &Shop::GetY);
 
     if ((best_x_rotated + best_y_rotated) % 2 == 0) {
-        printf("%d %d", (best_x_rotated + best_y_rotated) / 2,
-               (best_x_rotated - best_y_rotated) / 2);
+        printf("%d %d\n", (best_x_rotated + best_y_rotated) / 2,
+               (best_y_rotated - best_x_rotated) / 2);
         return 0;
     }
 
     const float best_x_unrotated
         = static_cast<float>(best_x_rotated + best_y_rotated) / 2;
-    if (best_x_unrotated < static_cast<float>(median_x))
-        printf("%d", median_x);
-    else
-        printf("%d", median_x + 1);
-
-    printf(" ");
-
     const float best_y_unrotated
-        = static_cast<float>(best_x_rotated - best_y_rotated) / 2;
-    if (best_y_unrotated < static_cast<float>(median_y))
-        printf("%d", median_y);
-    else
-        printf("%d", median_y + 1);
+        = static_cast<float>(best_y_rotated - best_x_rotated) / 2;
+    const int median_x = GetMedianCoord(shops, n, median_visit,
+                                        &Shop::GetX);
+    const int median_y = GetMedianCoord(shops, n, median_visit,
+                                        &Shop::GetY);
+
+    printf("%d %d\n", RoundUnrotatedCoord(best_x_unrotated, median_x),
+           RoundUnrotatedCoord(best_y_unrotated, median_y));
 
     return 0;
 }
