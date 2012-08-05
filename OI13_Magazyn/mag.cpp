@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <stdint.h>
 #include <algorithm>
 
 using namespace std;
@@ -24,7 +25,7 @@ class Shop {
 
     int x() const { return x_; }
     int y() const { return y_; }
-    int visit_count() const { return visit_count_; }
+    uint64_t visit_count() const { return visit_count_; }
     static int GetX(const Shop &s) { return s.x_; }
     static int GetY(const Shop &s) { return s.y_; }
     void Init(int x, int y, int visit_count);
@@ -33,7 +34,7 @@ class Shop {
   private:
     int x_;
     int y_;
-    int visit_count_;
+    uint64_t visit_count_;
 };
 
 bool Shop::Comparer::operator()(const Shop &a, const Shop &b) {
@@ -52,11 +53,11 @@ void Shop::Rotate() {
     y_ = x + y_;
 }
 
-int GetNthCoord(const Shop sorted_shops[], int nth,
+int GetNthCoord(const Shop sorted_shops[], uint64_t nth,
         int (*coord_accessor)(const Shop&)) {
     int i = 0;
     int retval = 0;
-    int shops_passed = 0;
+    uint64_t shops_passed = 0;
     while (shops_passed < nth) {
         retval = (*coord_accessor)(sorted_shops[i]);
         shops_passed += sorted_shops[i].visit_count();
@@ -65,7 +66,7 @@ int GetNthCoord(const Shop sorted_shops[], int nth,
     return retval;
 }
 
-int GetMedianCoord(Shop shops[], int n, int median_visit,
+int GetMedianCoord(Shop shops[], int n, uint64_t median_visit,
         int (*coord_accessor)(const Shop&)) {
     Shop::Comparer shop_comparer = Shop::Comparer(coord_accessor);
     sort(shops, shops + n, shop_comparer);
@@ -73,9 +74,8 @@ int GetMedianCoord(Shop shops[], int n, int median_visit,
 }
 
 int RoundUnrotatedCoord(float unrotated, int median) {
-    return (unrotated < static_cast<float>(median))
-        ? median
-        : median + 1;
+    return static_cast<int>(unrotated) +
+        (unrotated < static_cast<float>(median) ? 1 : 0);
 }
 
 void DebugShops(int n, const Shop shops[]) {
@@ -86,21 +86,22 @@ void DebugShops(int n, const Shop shops[]) {
 
 int main() {
     int n = 0;
-    int total_visit_count = 0;
+    uint64_t total_visit_count = 0;
     Shop shops[kMaximumShopsNumber];
     Shop rotated_shops[kMaximumShopsNumber];
 
     scanf("%d", &n);
     for (int i = 0; i < n; i++) {
-        int x, y, visit_count;
-        scanf("%d%d%d", &x, &y, &visit_count);
+        int x, y;
+        uint64_t visit_count;
+        scanf("%d%d%lu", &x, &y, &visit_count);
         total_visit_count += visit_count;
         shops[i].Init(x, y, visit_count);
         rotated_shops[i].Init(x, y, visit_count);
         rotated_shops[i].Rotate();
     }
 
-    const int median_visit = (total_visit_count + 1) / 2;
+    const uint64_t median_visit = (total_visit_count + 1) / 2;
 
     const int best_x_rotated = GetMedianCoord(rotated_shops, n,
                                               median_visit,
@@ -115,10 +116,10 @@ int main() {
         return 0;
     }
 
-    const float best_x_unrotated
-        = static_cast<float>(best_x_rotated + best_y_rotated) / 2;
-    const float best_y_unrotated
-        = static_cast<float>(best_y_rotated - best_x_rotated) / 2;
+    const float best_x_unrotated =
+            static_cast<float>(best_x_rotated + best_y_rotated) / 2;
+    const float best_y_unrotated =
+            static_cast<float>(best_y_rotated - best_x_rotated) / 2;
     const int median_x = GetMedianCoord(shops, n, median_visit,
                                         &Shop::GetX);
     const int median_y = GetMedianCoord(shops, n, median_visit,
