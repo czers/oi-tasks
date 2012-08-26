@@ -1,4 +1,4 @@
-TESTS_IN=`find $3 -type f | grep \.in$ | sort -V`
+TESTS_IN=`find $3 -type f | grep \.in$ | sort`
 echo `pwd`
 for t in $TESTS_IN
 do
