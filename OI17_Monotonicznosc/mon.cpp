@@ -3,9 +3,9 @@
 #include <algorithm>
 
 template<class T>
-class CounterTree {
+class RangeTree {
   public:
-    CounterTree(T (*operation)(const T&, const T&), T init_with,
+    RangeTree(T (*operation)(const T&, const T&), T init_with,
             int capacity)
         : operation_(operation) {
         int rounded_capacity = 1;
@@ -70,7 +70,7 @@ class CounterTree {
 };
 
 template<class T>
-T CounterTree<T>::GetValueOnInterval(int idx, int subtree_left,
+T RangeTree<T>::GetValueOnInterval(int idx, int subtree_left,
         int subtree_right, int searching_left, int searching_right) const {
 //    printf("GVOI: %d v: %d sl: %d sr: %d sel: %d ser: %d\n", idx,
 //            tree_[idx], subtree_left, subtree_right, searching_left,
@@ -107,7 +107,7 @@ T CounterTree<T>::GetValueOnInterval(int idx, int subtree_left,
 }
 
 template<class T>
-void CounterTree<T>::UpdatePoint(int point, T value) {
+void RangeTree<T>::UpdatePoint(int point, T value) {
     int idx = rounded_capacity_ + point - 1;
     tree_[idx] = value;
     while (idx != 0) {
@@ -123,7 +123,7 @@ int max_(const int& a, const int& b) {
 }
 
 int main() {
-    CounterTree<int> T = CounterTree<int>(max_, 0, 10);
+    RangeTree<int> T = RangeTree<int>(max_, 0, 10);
     for (int i = 0; i < 10; i++)
         T.UpdatePoint(i, i);
 //    T.PrintTree();
