@@ -6,19 +6,7 @@
 #include <utility>
 
 const int kMaxN = 200;
-const int kMaxP = 13;
-const int kMaxM = 3000;
 const int kMaxSwordMask = 8192;
-
-void PrintSwords(int16_t swords) {
-    for (int i = 0; i < 16; i++) {
-        if (swords & (1 << i))
-            printf("1");
-        else
-            printf("0");
-    }
-    printf("[%d]", swords);
-}
 
 int16_t add_sword(int16_t swords, int sword) {
     return swords | (1 << sword);
@@ -33,7 +21,6 @@ int16_t add_monster(int16_t monsters, int monster) {
 }
 
 bool can_defeat(int16_t monsters, int16_t swords) {
-//    printf("CD: "); PrintSwords(monsters & (~swords)); printf("\n");
     return (monsters & (~swords)) == 0;
 }
 
@@ -49,6 +36,7 @@ struct DijkstraCompare {
             return a.first < b.first;
         if (a.second != b.second)
             return a.second < b.second;
+        return false;
     }
 };
 
@@ -61,6 +49,8 @@ int main() {
     int n, m, p, k;
     scanf("%d%d%d%d", &n, &m, &p, &k);
     int16_t smiths[kMaxN];
+    for (int i = 0; i < n; i++)
+        smiths[i] = 0;
     for (int i = 0; i < k; i++) {
         int w, q;
         scanf("%d%d", &w, &q); 
@@ -97,38 +87,31 @@ int main() {
     Dijkstra Dij;
     min_costs[0][0] = 0;
     Dij.insert(std::make_pair<int, int16_t>(0, 0));
-    bool goal_reached;
-    //bool visited[kMaxN];
+    bool goal_reached = false;
     int best_cost = std::numeric_limits<int>::max();
     while (!Dij.empty() && !goal_reached) {
         std::pair<int, int16_t> v = *Dij.begin();
         Dij.erase(Dij.begin());
-//        visited[v.first] = true;
-//        printf("VISIT: %d c: %d swds: ", v.first, min_costs[v.first][v.second]); PrintSwords(v.second); printf("\n");
         if (v.first == n - 1) {
             goal_reached = true;
             best_cost = min_costs[v.first][v.second];
         }
         int edges_count = edges[v.first].size();
         for (int i = 0; i < edges_count; i++) {
+            int destination = edges[v.first][i];
             int new_cost = min_costs[v.first][v.second] + costs[v.first][i];
             int16_t new_swords = sum_swords(v.second, smiths[v.first]);
-            int destination = edges[v.first][i];
- //           printf(" MAYBE: %d ocost: %d ncost: %d nswds: ", destination, min_costs[destination][new_swords], new_cost); PrintSwords(new_swords); printf(" mon: "); PrintSwords(monsters[v.first][i]); 
-            if (//!visited[destination] &&
-                    new_cost < min_costs[destination][new_swords] &&
+            if (new_cost < min_costs[destination][new_swords] &&
                     can_defeat(monsters[v.first][i], new_swords)) {
-                std::pair<int, int16_t> next_node =
-                    std::make_pair(destination, new_swords);
+                DijkstraNode next_node =
+                    std::make_pair<int, int16_t>(destination, new_swords);
                 Dij.erase(next_node);
                 min_costs[destination][new_swords] = new_cost;
                 Dij.insert(next_node);
-//                printf(" UPDATED"); 
             }
-//            printf("\n");
         }
     }
-    if (best_cost == std::numeric_limits<int>::max())
+    if (!goal_reached)
         printf("-1\n");
     else
         printf("%d\n", best_cost);
